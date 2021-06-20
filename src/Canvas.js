@@ -3,11 +3,9 @@ import tapir from './tapir.png';
 import { Matrix, SingularValueDecomposition } from 'ml-matrix';
 
 function Canvas(props) {
-  const [rSVD, setRSVD] = useState(0);
-  const [gSVD, setGSVD] = useState(0);
-  const [bSVD, setBSVD] = useState(0);
-  const [imageData, setImageData] = useState(0);
-  const [ready, setReady] = useState(false);
+  const SVDs = useRef({});
+  const imageData = useRef({});
+  const ready = useRef(false);
 
   function reduceRank(SVD, rank) {
     console.log("reduceRank called for rank: " + rank);
@@ -54,21 +52,19 @@ function Canvas(props) {
         let redSVD = new SingularValueDecomposition(redMatrix);
         let greenSVD = new SingularValueDecomposition(greenMatrix);
         let blueSVD = new SingularValueDecomposition(blueMatrix);
-        setRSVD(redSVD);
-        setGSVD(greenSVD);
-        setBSVD(blueSVD);
-        setImageData(imgData); // TODO: make this state a deep copy
+        SVDs.current = {rSVD: redSVD, gSVD: greenSVD, bSVD: blueSVD};
+        imageData.current = imgData // TODO: make this state a deep copy
         console.log("Set the red, green, and blue svds in loading use effect");
         renderCompression(imgData, redSVD, greenSVD, blueSVD)
-        setReady(true);
+        ready.current = true;
       }
     }, false);
   }, [props.original]);
 
   useEffect(() => {
-    if (ready) {
+    if (ready.current) {
       console.log("Use effect triggered for reduction: " + props.reduction);
-      renderCompression(imageData, rSVD, gSVD, bSVD);
+      renderCompression(imageData.current, SVDs.current.rSVD, SVDs.current.gSVD, SVDs.current.bSVD);
     }
   }, [props.reduction]);
 
