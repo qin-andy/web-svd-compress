@@ -15,8 +15,8 @@ function Slider(props) {
     <
       input
       type="range"
-      min="0"
-      max="500"
+      min="1"
+      max="499"
       value={value}
       className="slider"
       onMouseUp={handleMouseUp}

@@ -9,27 +9,23 @@ function Canvas(props) {
   const [imageData, setImageData] = useState(0);
   const [ready, setReady] = useState(false);
 
-
   function reduceRank(SVD, rank) {
-    console.log("Reducing the rank of this SVD: ");
-    console.log(SVD);
-    console.log("Rank reduction is " + rank);
+    console.log("reduceRank called for rank: " + rank);
     let singularVals = SVD.diagonal;
-    console.log(singularVals);
     let reducedSingularVals = singularVals.slice(0, -rank);
-    for (let i = 0; i < rank; i++) {
+    for (let i = 0; i < rank; i++) { // TODO : why didnt the spread operator work?
       reducedSingularVals.push(0);
     }
-    console.log("Reduced singular values: " + reducedSingularVals);
     let newSigma = Matrix.diag(reducedSingularVals);
-    console.log("New sigma: " + newSigma);
     let U = SVD.leftSingularVectors;
     let Vt = SVD.rightSingularVectors.transpose();
+    // TODO : round when the SVD is stored as state?
     return U.apply(Math.round).mmul(newSigma.apply(Math.round)).mmul(Vt.apply(Math.round));
   }
 
   const canvasRef = useRef(null)
   useEffect(() => {
+    console.log("Initial useEffect triggered, initializing canvas ref");
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
 
@@ -39,6 +35,7 @@ function Canvas(props) {
     var img = new Image();
     img.src = tapir;
     img.addEventListener('load', async function () {
+      console.log("Image loaded, beginning initial compress");
       context.drawImage(img, 0, 0);
       if (props.original === "false") {
         let imgData = context.getImageData(0, 0, 500, 500);
@@ -50,9 +47,6 @@ function Canvas(props) {
           g.push(imgData.data[i + 1]);
           b.push(imgData.data[i + 2]);
         }
-        console.log(r);
-        console.log(g);
-        console.log(b);
         let redMatrix = Matrix.from1DArray(500, 500, r);
         let greenMatrix = Matrix.from1DArray(500, 500, g);
         let blueMatrix = Matrix.from1DArray(500, 500, b);
@@ -64,7 +58,7 @@ function Canvas(props) {
         setGSVD(greenSVD);
         setBSVD(blueSVD);
         setImageData(imgData); // TODO: make this state a deep copy
-        console.log("Set the red, green, and blue svds");
+        console.log("Set the red, green, and blue svds in loading use effect");
         renderCompression(imgData, redSVD, greenSVD, blueSVD)
         setReady(true);
       }
@@ -73,18 +67,17 @@ function Canvas(props) {
 
   useEffect(() => {
     if (ready) {
-      console.log("Rendering compression for reduction " + props.reduction);
-      console.log(imageData);
-      console.log(rSVD);
-      console.log(gSVD);
-      console.log(bSVD);
+      console.log("Use effect triggered for reduction: " + props.reduction);
       renderCompression(imageData, rSVD, gSVD, bSVD);
     }
   }, [props.reduction]);
 
   function renderCompression(imgData, redSVD, greenSVD, blueSVD) {
+    console.log("Reducing red");
     let redReduced = reduceRank(redSVD, props.reduction);
+    console.log("Reducing green");
     let greenReduced = reduceRank(greenSVD, props.reduction);
+    console.log("Reducing blue");
     let blueReduced = reduceRank(blueSVD, props.reduction);
 
     let r2 = redReduced.to1DArray();
@@ -97,6 +90,7 @@ function Canvas(props) {
       imgData.data[i + 2] = b2[i / 4];
     }
     canvasRef.current.getContext('2d').putImageData(imgData, 0, 0);
+    console.log("Reduced image rendered to canvas");
   }
 
   return (

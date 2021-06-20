@@ -11,7 +11,6 @@ function App(props) {
       <header className="App-header">
         <h1>Hello There!</h1>
         <h2>Current Reduction is {reduction}</h2>
-        <Canvas width="500" height="500" original="true" />
         <Canvas width="500" height="500" original="false" reduction={reduction} />
         <Slider reduction={reduction} changeReduction={setReduction} />
       </header>
