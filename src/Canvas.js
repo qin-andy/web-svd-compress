@@ -26,7 +26,7 @@ function Canvas(props) {
     console.log("reduceRank called for rank: " + rank);
     let reducedSingularVals = SVD.sigma.slice(0, -rank);
     for (let i = 0; i < rank; i++) { // TODO : why didnt the spread operator work?
-      reducedSingularVals.push(0); // TODO : can use mapping, if index is above the rank, map to 0
+      reducedSingularVals.push(1); // TODO : can use mapping, if index is above the rank, map to 0
     }
     let newSigma = Matrix.diag(reducedSingularVals);
     // TODO : round when the SVD is stored as state?
@@ -42,49 +42,51 @@ function Canvas(props) {
     context.fillStyle = '#000000';
     context.fillRect(0, 0, context.canvas.width, context.canvas.height);
     var img = new Image();
-    img.src = tapir;
+    img.src = props.image;
 
     // Start manipulating image only after image has loaded
-    img.addEventListener('load', async function () {
+    img.addEventListener('load', function () {
+      context.canvas.width = props.width;//img.width;
+      context.canvas.height = props.height;//img.height;
+
       console.log("Image loaded, beginning initial compress");
       context.drawImage(img, 0, 0);
-      if (props.original === "false") {
-        console.log("Canvas width and height are " + context.canvas.width + " " + context.canvas.width);
-        let imgData = context.getImageData(0, 0, context.canvas.width, context.canvas.height);
-        let r = []; // TODO : could restructure rgb to be a single object and map?
-        let g = [];
-        let b = [];
-        for (let i = 0; i < imgData.data.length; i += 4) {
-          r.push(imgData.data[i]);
-          g.push(imgData.data[i + 1]);
-          b.push(imgData.data[i + 2]);
-        }
-        let redMatrix = Matrix.from1DArray(context.canvas.width, context.canvas.height, r);
-        let greenMatrix = Matrix.from1DArray(context.canvas.width, context.canvas.height, g);
-        let blueMatrix = Matrix.from1DArray(context.canvas.width, context.canvas.height, b);
 
-        let redSVD = new SingularValueDecomposition(redMatrix);
-        let greenSVD = new SingularValueDecomposition(greenMatrix);
-        let blueSVD = new SingularValueDecomposition(blueMatrix);
-        let decomps = [redSVD, greenSVD, blueSVD];
-
-        decomps = decomps.map(svd => { // TODO : mapping vs iteration?
-          return {
-            U: svd.leftSingularVectors,//.apply(Math.round), TODO : round or not round? performance?
-            sigma: svd.diagonal,//.map(Math.round),
-            Vt: svd.rightSingularVectors.transpose()//.apply(Math.round).transpose()
-          }
-        });
-
-        SVDs.current = decomps;
-        imageData.current = imgData // TODO: make this state a deep copy
-        console.log("Set the red, green, and blue svds in loading use effect");
-        renderCompression(imgData, SVDs.current[0], SVDs.current[1], SVDs.current[2], props.reduction);
-        // TODO : ^ should i pass props.reduction here? where does it make sense to store this initial value?
-        ready.current = true;
+      console.log("Canvas width and height are " + context.canvas.width + " " + context.canvas.height);
+      let imgData = context.getImageData(0, 0, context.canvas.width, context.canvas.height);
+      let r = []; // TODO : could restructure rgb to be a single object and map?
+      let g = [];
+      let b = [];
+      for (let i = 0; i < imgData.data.length; i += 4) {
+        r.push(imgData.data[i]);
+        g.push(imgData.data[i + 1]);
+        b.push(imgData.data[i + 2]);
       }
+      let redMatrix = Matrix.from1DArray(context.canvas.width, context.canvas.height, r); // TODO : context.canvas.height
+      let greenMatrix = Matrix.from1DArray(context.canvas.width, context.canvas.height, g); // VS img.height??
+      let blueMatrix = Matrix.from1DArray(context.canvas.width, context.canvas.height, b);
+
+      let redSVD = new SingularValueDecomposition(redMatrix);
+      let greenSVD = new SingularValueDecomposition(greenMatrix);
+      let blueSVD = new SingularValueDecomposition(blueMatrix);
+      let decomps = [redSVD, greenSVD, blueSVD];
+
+      decomps = decomps.map(svd => { // TODO : mapping vs iteration?
+        return {
+          U: svd.leftSingularVectors,//.apply(Math.round), TODO : round or not round? performance?
+          sigma: svd.diagonal,//.map(Math.round),
+          Vt: svd.rightSingularVectors.transpose()//.apply(Math.round).transpose()
+        }
+      });
+
+      SVDs.current = decomps;
+      imageData.current = imgData // TODO: make this state a deep copy
+      console.log("Set the red, green, and blue svds in loading use effect");
+      renderCompression(imgData, SVDs.current[0], SVDs.current[1], SVDs.current[2], props.reduction);
+      // TODO : ^ should i pass props.reduction here? where does it make sense to store this initial value?
+      ready.current = true;
     }, false);
-  }, [props.original]);
+  }, []);
 
   useEffect(() => {
     if (ready.current) {
@@ -100,11 +102,8 @@ function Canvas(props) {
 
   // Rebuilds the image on the given imgData given image SVDs
   function renderCompression(imgData, redSVD, greenSVD, blueSVD, rank) {
-    console.log("Reducing red");
     let redReduced = reduceRank(redSVD, rank);
-    console.log("Reducing green");
     let greenReduced = reduceRank(greenSVD, rank);
-    console.log("Reducing blue");
     let blueReduced = reduceRank(blueSVD, rank);
 
     let r2 = redReduced.to1DArray();
@@ -122,9 +121,8 @@ function Canvas(props) {
 
   return (
     <div>
-      <canvas ref={canvasRef} width={props.width} height={props.height} />
+      <canvas width={props.width} height={props.height} ref={canvasRef} />
     </div>
-
   );
 }
 
