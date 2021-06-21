@@ -7,9 +7,9 @@ import defaultImage from './tapir.jpg';
 import { useEffect, useState } from 'react';
 
 function App(props) {
-  const [reduction, setReduction] = useState(300);
-  const [width, setWidth] = useState(501);
-  const [height, setHeight] = useState(400);
+  const [reduction, setReduction] = useState(30);
+  const [width, setWidth] = useState(100);
+  const [height, setHeight] = useState(101);
   let imageElement = undefined;
 
   useEffect(() => {
@@ -35,8 +35,8 @@ function App(props) {
         />
         <h3>Reduction Value: {reduction}</h3>
         <Slider
-          width={height}
-          height={width}
+          width={width}
+          height={height}
           reduction={reduction}
           changeReduction={setReduction}
         />

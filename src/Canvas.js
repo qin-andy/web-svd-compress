@@ -27,11 +27,7 @@ function Canvas(props) {
     let reducedSingularVals = SVD.sigma;//.slice(0, -rank);
     let Vt = SVD.Vt.subMatrix(0, rank, 0, SVD.Vt.columns-1);
     let U = SVD.U.subMatrix(0, SVD.U.rows-1, 0, rank);
-    console.log(U);
-    console.log(Vt);
-
     let newSigma = Matrix.diag(reducedSingularVals).subMatrix(0, rank, 0, rank);
-    console.log(newSigma);
     return U.mmul(newSigma).mmul(Vt);
   }
 
@@ -59,18 +55,23 @@ function Canvas(props) {
       let r = []; // TODO : could restructure rgb to be a single object and map?
       let g = [];
       let b = [];
+      console.log("Pushing RGB into array");
       for (let i = 0; i < imgData.data.length; i += 4) {
         r.push(imgData.data[i]);
         g.push(imgData.data[i + 1]);
         b.push(imgData.data[i + 2]);
       }
+      console.log("Creating matricies");
+      console.log("context canvas w/h: " + context.canvas.width + "," + context.canvas.height);
+      console.log(r);
       let redMatrix = Matrix.from1DArray(context.canvas.width, context.canvas.height, r); // TODO : context.canvas.height
       let greenMatrix = Matrix.from1DArray(context.canvas.width, context.canvas.height, g); // VS img.height??
       let blueMatrix = Matrix.from1DArray(context.canvas.width, context.canvas.height, b);
 
-      let redSVD = new SingularValueDecomposition(redMatrix);
-      let greenSVD = new SingularValueDecomposition(greenMatrix);
-      let blueSVD = new SingularValueDecomposition(blueMatrix);
+      console.log("Computing SVDs");
+      let redSVD = new SingularValueDecomposition(redMatrix, {autoTranspose: true});
+      let greenSVD = new SingularValueDecomposition(greenMatrix, {autoTranspose: true});
+      let blueSVD = new SingularValueDecomposition(blueMatrix, {autoTranspose: true});
       let decomps = [redSVD, greenSVD, blueSVD];
 
       decomps = decomps.map(svd => { // TODO : mapping vs iteration?
@@ -84,7 +85,7 @@ function Canvas(props) {
       SVDs.current = decomps;
       imageData.current = imgData // TODO: make this state a deep copy
       console.log("Set the red, green, and blue svds in loading use effect");
-      renderCompression(imgData, SVDs.current[0], SVDs.current[1], SVDs.current[2], props.reduction);
+      renderCompression(SVDs.current[0], SVDs.current[1], SVDs.current[2], props.reduction);
       // TODO : ^ should i pass props.reduction here? where does it make sense to store this initial value?
       ready.current = true;
     }, false);
@@ -94,7 +95,6 @@ function Canvas(props) {
     if (ready.current) {
       console.log("Use effect triggered for reduction: " + props.reduction);
       renderCompression(
-        imageData.current,
         SVDs.current[0],
         SVDs.current[1],
         SVDs.current[2],
@@ -103,20 +103,25 @@ function Canvas(props) {
   }, [props.reduction]);
 
   // Rebuilds the image on the given imgData given image SVDs
-  function renderCompression(imgData, redSVD, greenSVD, blueSVD, rank) {
+  function renderCompression(redSVD, greenSVD, blueSVD, rank) {
     let redReduced = reduceRank(redSVD, rank);
     let greenReduced = reduceRank(greenSVD, rank);
     let blueReduced = reduceRank(blueSVD, rank);
 
-    let r2 = redReduced.to1DArray();
-    let g2 = greenReduced.to1DArray();
-    let b2 = blueReduced.to1DArray();
+    let r2 = redReduced.to1DArray().map(Math.round);
+    let g2 = greenReduced.to1DArray().map(Math.round);
+    let b2 = blueReduced.to1DArray().map(Math.round);
+    let imgData = new ImageData(props.width, props.height)
+    console.log(imgData.data);
+    console.log(r2);
 
     for (let i = 0; i < imgData.data.length; i += 4) {
       imgData.data[i] = r2[i / 4];
       imgData.data[i + 1] = g2[i / 4];
       imgData.data[i + 2] = b2[i / 4];
+      imgData.data[i + 3] = 255;
     }
+    console.log(imgData.data);
     canvasRef.current.getContext('2d').putImageData(imgData, 0, 0);
     console.log("Reduced image rendered to canvas");
   }
