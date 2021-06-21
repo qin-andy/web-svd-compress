@@ -2,14 +2,14 @@ import './App.css';
 import Canvas from './Canvas';
 import Slider from './Slider';
 
-import defaultImage from './tapir.png';
+import defaultImage from './tapir.jpg';
 
 import { useEffect, useState } from 'react';
 
 function App(props) {
   const [reduction, setReduction] = useState(300);
-  const [width, setWidth] = useState(601);
-  const [height, setHeight] = useState(451);
+  const [width, setWidth] = useState(501);
+  const [height, setHeight] = useState(400);
   let imageElement = undefined;
 
   useEffect(() => {

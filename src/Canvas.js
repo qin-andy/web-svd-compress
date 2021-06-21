@@ -23,14 +23,16 @@ function Canvas(props) {
 
   // Reduces the SVD by the given rank
   function reduceRank(SVD, rank) {
-    console.log("reduceRank called for rank: " + rank);
-    let reducedSingularVals = SVD.sigma.slice(0, -rank);
-    for (let i = 0; i < rank; i++) { // TODO : why didnt the spread operator work?
-      reducedSingularVals.push(1); // TODO : can use mapping, if index is above the rank, map to 0
-    }
-    let newSigma = Matrix.diag(reducedSingularVals);
-    // TODO : round when the SVD is stored as state?
-    return SVD.U.mmul(newSigma).mmul(SVD.Vt);
+    rank = parseInt(rank);
+    let reducedSingularVals = SVD.sigma;//.slice(0, -rank);
+    let Vt = SVD.Vt.subMatrix(0, rank, 0, SVD.Vt.columns-1);
+    let U = SVD.U.subMatrix(0, SVD.U.rows-1, 0, rank);
+    console.log(U);
+    console.log(Vt);
+
+    let newSigma = Matrix.diag(reducedSingularVals).subMatrix(0, rank, 0, rank);
+    console.log(newSigma);
+    return U.mmul(newSigma).mmul(Vt);
   }
 
   // After the component is mounted, need to get the reference to the canvas context
@@ -73,9 +75,9 @@ function Canvas(props) {
 
       decomps = decomps.map(svd => { // TODO : mapping vs iteration?
         return {
-          U: svd.leftSingularVectors,//.apply(Math.round), TODO : round or not round? performance?
-          sigma: svd.diagonal,//.map(Math.round),
-          Vt: svd.rightSingularVectors.transpose()//.apply(Math.round).transpose()
+          U: svd.leftSingularVectors.apply(Math.round), // TODO : round or not round? performance?
+          sigma: svd.diagonal.map(Math.round),
+          Vt: svd.rightSingularVectors.apply(Math.round).transpose()
         }
       });
 
