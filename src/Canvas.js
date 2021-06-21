@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react'
 import { Matrix, SingularValueDecomposition } from 'ml-matrix';
+import svdWorker from "./svd.worker";
 
 /**
  * Process goes like this:
@@ -18,6 +19,7 @@ import { Matrix, SingularValueDecomposition } from 'ml-matrix';
 function Canvas(props) {
   const SVDs = useRef([]); // Stores the computed SVDs of an image
   const ready = useRef(false);
+  const worker = useRef(null);
 
   // After the component is mounted, need to get the reference to the canvas context
   const canvasRef = useRef(null)
@@ -27,6 +29,8 @@ function Canvas(props) {
   // This effect renders the initial image onto the canvas, creates SVD matricies, renders
   // an initial compression, and then sets the ready flag to allow for further renderings
   useEffect(() => {
+
+    worker.current = new svdWorker();
     // Initialize a canvas of initial props width and height, painting the inside black
     console.log("Initial useEffect triggered, initializing canvas ref");
     const canvas = canvasRef.current;
@@ -72,6 +76,12 @@ function Canvas(props) {
       // MATRIX ENTRIES ARE (ROW, COLUMN), i.e. (Y, X)
       // WRONG: (WIDTH, HEIGHT)
       // CORRECT: >>>> (HEIGHT, WIDTH) <<<<
+      console.log("Sending message to worker");
+      worker.current.addEventListener("message", e => {
+        console.log("Message from worker: " + e.data);
+      });
+      worker.current.postMessage("Hellow, worker!");
+
       let redMatrix = Matrix.from1DArray(canvasHeight, canvasWidth, r);
       let greenMatrix = Matrix.from1DArray(canvasHeight, canvasWidth, g);
       let blueMatrix = Matrix.from1DArray(canvasHeight, canvasWidth, b);
@@ -112,6 +122,7 @@ function Canvas(props) {
   // Render new low rank approximation when the reduction changes
   useEffect(() => {
     if (ready.current) {
+      worker.current.postMessage("Hebbo from useEffect!");
       console.log("Use effect triggered for reduction: " + props.reduction);
       renderCompression(
         props.width,

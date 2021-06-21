@@ -3,7 +3,7 @@ import Canvas from './Canvas';
 import Slider from './Slider';
 
 // TODO : why don't JPGs work?
-import defaultImage from './set_proof.png';
+import defaultImage from './small_proof.png';
 
 import { useState } from 'react';
 
