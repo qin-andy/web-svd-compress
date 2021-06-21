@@ -40,5 +40,13 @@
   "devDependencies": {},
   "author": "",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qin-andy/web-svd-compress.git"
+  },
+  "bugs": {
+    "url": "https://github.com/qin-andy/web-svd-compress/issues"
+  },
+  "homepage": "https://github.com/qin-andy/web-svd-compress#readme",
   "description": ""
 }
