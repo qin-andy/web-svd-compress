@@ -2,15 +2,15 @@ import './App.css';
 import Canvas from './Canvas';
 import Slider from './Slider';
 
+// TODO : why don't JPGs work?
 import defaultImage from './set_proof.png';
 
 import { useState } from 'react';
 
 function App(props) {
-  const [reduction, setReduction] = useState(30);
-  const [width, setWidth] = useState(400);
+  const [reduction, setReduction] = useState(30); // Initial reduction compression
+  const [width, setWidth] = useState(400); // Initial canvas element height and width
   const [height, setHeight] = useState(300);
-
   return (
     <div className="App">
       <header className="App-header">
