@@ -1,5 +1,4 @@
 import React, { useRef, useEffect } from 'react'
-import tapir from './tapir.png';
 import { Matrix, SingularValueDecomposition } from 'ml-matrix';
 
 /**
@@ -32,15 +31,18 @@ function Canvas(props) {
     img.src = props.image;
 
     // Start manipulating image only after image has loaded
-    img.addEventListener('load', function () {
-      context.canvas.width = props.width;//img.width;
-      context.canvas.height = props.height;//img.height;
-
+    img.addEventListener('load', function () { // WATCH THIS,,, remove this event listener if canvas is ever removed/
       console.log("Image loaded, beginning initial compress");
+      props.setWidth(img.width);
+      props.setHeight(img.height);
+      let canvasWidth = img.width;
+      let canvasHeight = img.height;
+      context.canvas.width = canvasWidth;
+      context.canvas.height = canvasHeight;
       context.drawImage(img, 0, 0);
 
-      console.log("Canvas width and height are " + context.canvas.width + " " + context.canvas.height);
-      let imgData = context.getImageData(0, 0, context.canvas.width, context.canvas.height);
+      console.log("Canvas width and height are " + canvasWidth + " " + canvasHeight);
+      let imgData = context.getImageData(0, 0, canvasWidth, canvasHeight);
       let r = []; // TODO : could restructure rgb to be a single object and map?
       let g = [];
       let b = [];
@@ -51,10 +53,12 @@ function Canvas(props) {
         b.push(imgData.data[i + 2]);
       }
       console.log("Creating matricies");
-      console.log("context canvas w/h: " + context.canvas.width + "," + context.canvas.height);
-      let redMatrix = Matrix.from1DArray(context.canvas.height, context.canvas.width, r); // TODO : context.canvas.height
-      let greenMatrix = Matrix.from1DArray(context.canvas.height, context.canvas.width, g); // VS img.height??
-      let blueMatrix = Matrix.from1DArray(context.canvas.height, context.canvas.width, b);
+      // MATRIX ENTRIES ARE (ROW, COLUMN), i.e. (Y, X)
+      // WRONG: (WIDTH, HEIGHT)
+      // CORRECT: >>>> (HEIGHT, WIDTH) <<<<
+      let redMatrix = Matrix.from1DArray(canvasHeight, canvasWidth, r);
+      let greenMatrix = Matrix.from1DArray(canvasHeight, canvasWidth, g);
+      let blueMatrix = Matrix.from1DArray(canvasHeight, canvasWidth, b);
 
       console.log("Computing SVDs");
       let redSVD = new SingularValueDecomposition(redMatrix, { autoTranspose: true });
@@ -70,11 +74,10 @@ function Canvas(props) {
           Vt: svd.rightSingularVectors.transpose()
         }
       });
-      console.log(decomps);
 
       SVDs.current = decomps;
       console.log("Set the red, green, and blue svds in loading use effect");
-      renderCompression(SVDs.current[0], SVDs.current[1], SVDs.current[2], props.reduction);
+      renderCompression(canvasWidth, canvasHeight, SVDs.current[0], SVDs.current[1], SVDs.current[2], props.reduction);
       // TODO : ^ should i pass props.reduction here? where does it make sense to store this initial value?
       ready.current = true;
     }, false);
@@ -85,6 +88,8 @@ function Canvas(props) {
     if (ready.current) {
       console.log("Use effect triggered for reduction: " + props.reduction);
       renderCompression(
+        props.width,
+        props.height,
         SVDs.current[0],
         SVDs.current[1],
         SVDs.current[2],
@@ -95,24 +100,21 @@ function Canvas(props) {
   // Reduces the SVD by the given rank
   function reduceRank(SVD, rank) {
     rank = parseInt(rank);
-    
     let U = SVD.U.subMatrix(0, SVD.U.rows - 1, 0, rank);
     let Vt = SVD.Vt.subMatrix(0, rank, 0, SVD.Vt.columns - 1);
-
     let newSigma = Matrix.diag(SVD.sigma).subMatrix(0, rank, 0, rank);
-    console.log("U, Sigma, and Vt are: ");
-    console.log(U);
-    console.log(newSigma);
-    console.log(Vt);
-    console.log("The resulting product is: ");
+    // console.log("U, Sigma, and Vt are: ");
+    // console.log(U);
+    // console.log(newSigma);
+    // console.log(Vt);
+    // console.log("The resulting product is: ");
     let result = U.mmul(newSigma).mmul(Vt).round();
-    console.log(result);
     return result;
     // return SVD.U.mmul(Matrix.diag(SVD.sigma)).mmul(SVD.Vt);
   }
 
   // Rebuilds the image on the given imgData given image SVDs
-  function renderCompression(redSVD, greenSVD, blueSVD, rank) {
+  function renderCompression(width, height, redSVD, greenSVD, blueSVD, rank) {
     let redReduced = reduceRank(redSVD, rank);
     let greenReduced = reduceRank(greenSVD, rank);
     let blueReduced = reduceRank(blueSVD, rank);
@@ -120,11 +122,11 @@ function Canvas(props) {
     let r2 = redReduced.to1DArray();
     let g2 = greenReduced.to1DArray();
     let b2 = blueReduced.to1DArray();
-    let imgData = new ImageData(props.width, props.height)
+
+    let imgData = new ImageData(width, height);
     let data = imgData.data;
 
     console.log("Writing to image data");
-    console.log(r2);
 
     for (let i = 0; i < data.length; i += 4) {
       data[i] = r2[i / 4];
@@ -132,7 +134,6 @@ function Canvas(props) {
       data[i + 2] = b2[i / 4];
       data[i + 3] = 255;
     }
-    console.log(data);
     canvasRef.current.getContext('2d').putImageData(imgData, 0, 0);
     console.log("Reduced image rendered to canvas");
   }
