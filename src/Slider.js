@@ -15,7 +15,7 @@ function Slider(props) {
     <
       input
       type="range"
-      min="1"
+      min="0"
       max={Math.min(props.width, props.height)-1} // TODO : Dynamic slider adjustment based on width and height
       value={value}
       className="slider"

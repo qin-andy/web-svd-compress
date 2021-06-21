@@ -2,25 +2,24 @@ import './App.css';
 import Canvas from './Canvas';
 import Slider from './Slider';
 
-import defaultImage from './tapir.jpg';
+import defaultImage from './tapir.png';
 
 import { useEffect, useState } from 'react';
 
 function App(props) {
   const [reduction, setReduction] = useState(30);
-  const [width, setWidth] = useState(100);
-  const [height, setHeight] = useState(101);
-  let imageElement = undefined;
+  const [width, setWidth] = useState(400);
+  const [height, setHeight] = useState(300);
 
-  useEffect(() => {
-    imageElement = new Image();
-    imageElement.src = defaultImage;
-    imageElement.addEventListener('load', () => {
-      console.log("w/h of imageelement in app " + imageElement.width + ", " + imageElement.height);
-      //setWidth(imageElement.width);
-      //setHeight(imageElement.height);
-    });
-  }, []);
+  // useEffect(() => {
+  //   imageElement = new Image();
+  //   imageElement.src = defaultImage;
+  //   imageElement.addEventListener('load', () => {
+  //     console.log("w/h of imageelement in app " + imageElement.width + ", " + imageElement.height);
+  //     //setWidth(imageElement.width);
+  //     //setHeight(imageElement.height);
+  //   });
+  // }, []);
 
   return (
     <div className="App">
