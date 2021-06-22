@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 function Slider(props) {
   const [value, setValue] = useState(props.reduction);
@@ -14,6 +14,11 @@ function Slider(props) {
   function handleChange(e) {
     setValue(e.target.value);
   }
+
+    useEffect(() => {
+      setValue(props.reduction);
+    }, [props.reduction])
+
   return (
     <input
       type="range"

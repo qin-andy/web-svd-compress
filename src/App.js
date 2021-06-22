@@ -1,6 +1,7 @@
 import './App.css';
 import Canvas from './Canvas';
 import Slider from './Slider';
+import GalleryButton from './GalleryButton';
 
 // TODO : why don't JPGs work?
 import horizon from './images/horizon.png';
@@ -17,10 +18,10 @@ function App(props) {
   const [reduction, setReduction] = useState(19); // Initial reduction compression
   const [width, setWidth] = useState(400); // Initial canvas element height and width
   const [height, setHeight] = useState(300);
-  const [image, setImage] = useState(horizon);
+  const [currentImage, setCurrentImage] = useState(0);
   const images = useRef([horizon, bridge, city, origami, shore, squid, pole, tapir]);
-  const [sliderEnabled, setSliderEnabled] = useState(false);
-  let status = sliderEnabled ? "Image is " + width + " by " + height : "Calculating SVDs...";
+  const [uiDisabled, setUiDisabled] = useState(true);
+  let status = uiDisabled ? "Calculating SVDs..." : "Image is " + width + " by " + height;
   return (
     <div className="App">
       <header className="App-header">
@@ -30,24 +31,51 @@ function App(props) {
       <Canvas
         original="false"
         reduction={reduction}
-        image={image}
+        image={images.current[currentImage]}
         width={width}
         height={height}
         setWidth={setWidth}
         setHeight={setHeight}
-        setSliderEnabled={setSliderEnabled}
+        setUiDisabled={setUiDisabled}
       />
+      <div>
+        <button
+          onClick={() => {
+            setCurrentImage(currentImage - 1);
+            setUiDisabled(true)
+          }}
+          disabled={currentImage <= 0 ? true : uiDisabled}
+          className="button"
+        >
+          Previous
+        </button>
+        <button
+          onClick={() => {
+            setCurrentImage(currentImage + 1);
+            setUiDisabled(true)
+          }}
+          disabled={currentImage >= 7 ? true : uiDisabled}
+          className="button"
+        >
+          Next
+        </button>
+      </div>
       <Slider
         width={width}
         height={height}
         reduction={reduction}
         changeReduction={setReduction}
-        disabled={!sliderEnabled}
+        disabled={uiDisabled}
       />
       <div className="info-container">
         <h3>Singular Values: {parseInt(reduction) + 1}</h3>
-        <p>
-          An interactive demo of Singular Value Decomposition (SVD) compression applied to various images.
+        <p>Approximate Original Pixels: {
+          width * height
+        }
+        </p>
+        <p>Approximate Compressed Pixels: {
+          (parseInt(reduction) + 1) * width + (parseInt(reduction) + 1) * height + (parseInt(reduction) + 1) ^ 2
+        }
         </p>
       </div>
     </div>

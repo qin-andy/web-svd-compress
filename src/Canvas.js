@@ -18,22 +18,45 @@ import svdWorker from "./svd.worker";
 
 function Canvas(props) {
   const SVDs = useRef([0, 0, 0]); // Stores the computed SVDs of an image
+  const wh = useRef([props.width, props.height]);
   const ready = useRef(false);
-  const workers = useRef(null);
+  const workers = useRef([
+    new svdWorker(),
+    new svdWorker(),
+    new svdWorker()
+  ]);
 
   // After the component is mounted, need to get the reference to the canvas context
   const canvasRef = useRef(null)
+
+  useEffect(() => {
+    for (let i = 0; i < 3; i++) {
+      console.log("ADDING EVENT LISTENER TO WORKER");
+      workers.current[i].addEventListener("message", e => {
+        console.log("Recieved SVD from worker")
+        console.log(SVDs.current);
+        SVDs.current[i] = {
+          U: new Matrix(e.data.U),
+          sigma: e.data.sigma,
+          Vt: new Matrix(e.data.Vt)
+        };
+        if (SVDs.current[0] && SVDs.current[1] && SVDs.current[2]) {
+          console.log("ALL SVDs DONE!");
+          renderCompression();
+          props.setUiDisabled(false);
+          ready.current = true;
+        }
+      });
+    }
+  }, []);
 
   // This effect runs ONCE
   // This effect runs AFTER the component is mounted, so we know we can interact with the canvas
   // This effect renders the initial image onto the canvas, creates SVD matricies, renders
   // an initial compression, and then sets the ready flag to allow for further renderings
   useEffect(() => {
-    workers.current = [];
-    workers.current[0] = new svdWorker();
-    workers.current[1] = new svdWorker();
-    workers.current[2] = new svdWorker();
-
+    props.setUiDisabled(true);
+    SVDs.current = [0, 0, 0];
     // Initialize a canvas of initial props width and height, painting the inside black
     console.log("Initial useEffect triggered, initializing canvas ref");
     const canvas = canvasRef.current;
@@ -48,13 +71,12 @@ function Canvas(props) {
 
     // Start manipulating image only after image has loaded
     img.addEventListener('load', function () {
-      // TODO : Remove this event listener ^^^
-
       // Updating height and width values according to the loaded img
       // Uses setWidth/setHeight callbacks to update the slider as well
       console.log("Image loaded, beginning initial compress");
       props.setWidth(img.width); // TODO : combiend object for widht and height?
       props.setHeight(img.height);
+      wh.current = [img.width, img.height];
       context.canvas.width = img.width;
       context.canvas.height = img.height;
       let canvasWidth = img.width;
@@ -77,27 +99,6 @@ function Canvas(props) {
       console.log("Creating matricies");
       console.log("Sending message to worker");
       for (let i = 0; i < 3; i++) {
-        workers.current[i].addEventListener("message", e => {
-          console.log("Recieved SVD from worker")
-          console.log(SVDs.current);
-          SVDs.current[i] = {
-            U: new Matrix(e.data.U),
-            sigma: e.data.sigma,
-            Vt: new Matrix(e.data.Vt)
-          };
-          if (SVDs.current[0] && SVDs.current[1] && SVDs.current[2]) {
-            console.log("ALL SVDs DONE!");
-            renderCompression(
-              canvasWidth,
-              canvasHeight,
-              SVDs.current[0],
-              SVDs.current[1],
-              SVDs.current[2],
-              props.reduction
-            );
-            ready.current = true;
-          }
-        });
         workers.current[i].postMessage({
           rows: canvasHeight,
           columns: canvasWidth,
@@ -111,20 +112,19 @@ function Canvas(props) {
   useEffect(() => {
     if (ready.current) {
       console.log("Use effect triggered for reduction: " + props.reduction);
-      props.setSliderEnabled(false);
       renderCompression(
-        props.width,
-        props.height,
-        SVDs.current[0],
-        SVDs.current[1],
-        SVDs.current[2],
-        props.reduction
       );
     }
   }, [props.reduction]);
 
   // Rebuilds the image on the given imgData given image SVDs
-  async function renderCompression(width, height, redSVD, greenSVD, blueSVD, rank) {
+  async function renderCompression() {
+    let width = wh.current[0];
+    let height = wh.current[1];
+    let redSVD = SVDs.current[0];
+    let greenSVD = SVDs.current[1];
+    let blueSVD = SVDs.current[2];
+    let rank = props.reduction;
     // Get low rank approximation matricies
     let redReduced = reduceRank(redSVD, rank);
     let greenReduced = reduceRank(greenSVD, rank);
@@ -151,7 +151,6 @@ function Canvas(props) {
     //Render image data to canvas
     canvasRef.current.getContext('2d').putImageData(imgData, 0, 0);
     console.log("Reduced image rendered to canvas");
-    props.setSliderEnabled(true);
   }
 
   // Reduces the SVD by the given rank

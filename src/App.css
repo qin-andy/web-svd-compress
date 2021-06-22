@@ -50,3 +50,25 @@ body {
   width: 50vw;
   margin: 3vw;
 }
+
+.button {
+  background-color: #29165c; /* Green */
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+}
+
+.button:disabled {
+  background-color: #5c5c5c; /* Green */
+  border: none;
+  color: rgb(0, 0, 0);
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+}
