@@ -34,6 +34,7 @@ function Canvas(props) {
     workers.current[0] = new svdWorker();
     workers.current[1] = new svdWorker();
     workers.current[2] = new svdWorker();
+
     // Initialize a canvas of initial props width and height, painting the inside black
     console.log("Initial useEffect triggered, initializing canvas ref");
     const canvas = canvasRef.current;
@@ -53,7 +54,7 @@ function Canvas(props) {
       // Updating height and width values according to the loaded img
       // Uses setWidth/setHeight callbacks to update the slider as well
       console.log("Image loaded, beginning initial compress");
-      props.setWidth(img.width);
+      props.setWidth(img.width); // TODO : combiend object for widht and height?
       props.setHeight(img.height);
       context.canvas.width = img.width;
       context.canvas.height = img.height;
@@ -64,150 +65,52 @@ function Canvas(props) {
       // Extracting RGB values from canvas into arrays
       console.log("Canvas width and height are " + canvasWidth + " " + canvasHeight);
       let imgData = context.getImageData(0, 0, canvasWidth, canvasHeight);
-      let r = []; // TODO : could restructure rgb to be a single object and map?
-      let g = [];
-      let b = [];
+      let rgb = [[], [], []];
+
       console.log("Pushing RGB into array");
       for (let i = 0; i < imgData.data.length; i += 4) {
-        r.push(imgData.data[i]);
-        g.push(imgData.data[i + 1]);
-        b.push(imgData.data[i + 2]);
+        rgb[0].push(imgData.data[i]);
+        rgb[1].push(imgData.data[i + 1]);
+        rgb[2].push(imgData.data[i + 2]);
       }
 
       // Construct RGB matricies from arrays
       console.log("Creating matricies");
-      // MATRIX ENTRIES ARE (ROW, COLUMN), i.e. (Y, X)
-      // WRONG: (WIDTH, HEIGHT)
-      // CORRECT: >>>> (HEIGHT, WIDTH) <<<<
-      console.log(SVDs.current);
       console.log("Sending message to worker");
-      console.log(workers.current);
-
-      workers.current[0].addEventListener("message", e => {
-        console.log("Recieved SVD from worker")
-        console.log(SVDs.current);
-        SVDs.current[0] = {
-          U: new Matrix(e.data.U),
-          sigma: e.data.sigma,
-          Vt: new Matrix(e.data.Vt)
-        };
-        if (SVDs.current[0] && SVDs.current[1] && SVDs.current[2]) {
-          console.log("ALL SVDs DONE!");
-          renderCompression(
-            canvasWidth,
-            canvasHeight,
-            SVDs.current[0],
-            SVDs.current[1],
-            SVDs.current[2],
-            props.reduction
-          );
-          ready.current = true;
-        }
-      });
-
-      workers.current[1].addEventListener("message", e => {
-        console.log("Recieved SVD from worker")
-        console.log(SVDs.current);
-        SVDs.current[1] = {
-          U: new Matrix(e.data.U),
-          sigma: e.data.sigma,
-          Vt: new Matrix(e.data.Vt)
-        };
-        if (SVDs.current[0] && SVDs.current[1] && SVDs.current[2]) {
-          console.log("ALL SVDs DONE!");
-          renderCompression(
-            canvasWidth,
-            canvasHeight,
-            SVDs.current[0],
-            SVDs.current[1],
-            SVDs.current[2],
-            props.reduction
-          );
-          ready.current = true;
-        }
-      });
-
-      workers.current[2].addEventListener("message", e => {
-        console.log("Recieved SVD from worker")
-        console.log(SVDs.current);
-        SVDs.current[2] = {
-          U: new Matrix(e.data.U),
-          sigma: e.data.sigma,
-          Vt: new Matrix(e.data.Vt)
-        };
-        if (SVDs.current[0] && SVDs.current[1] && SVDs.current[2]) {
-          console.log("ALL SVDs DONE!");
-          renderCompression(
-            canvasWidth,
-            canvasHeight,
-            SVDs.current[0],
-            SVDs.current[1],
-            SVDs.current[2],
-            props.reduction
-          );
-          ready.current = true;
-        }
-      });
-
-      workers.current[0].postMessage({
-        rows: canvasHeight,
-        columns: canvasWidth,
-        array: r
-      });
-
-      workers.current[1].postMessage({
-        rows: canvasHeight,
-        columns: canvasWidth,
-        array: g
-      });
-
-      workers.current[2].postMessage({
-        rows: canvasHeight,
-        columns: canvasWidth,
-        array: b
-      });
-
-      // let redMatrix = Matrix.from1DArray(canvasHeight, canvasWidth, r);
-      // let greenMatrix = Matrix.from1DArray(canvasHeight, canvasWidth, g);
-      // let blueMatrix = Matrix.from1DArray(canvasHeight, canvasWidth, b);
-
-      // // Compute SVDs for each matrix
-      // // TODO : would it be better to just handle hte matricies directly? would save memory
-      // console.log("Computing SVDs");
-      // let redSVD = new SingularValueDecomposition(redMatrix, { autoTranspose: true });
-      // let greenSVD = new SingularValueDecomposition(greenMatrix, { autoTranspose: true });
-      // let blueSVD = new SingularValueDecomposition(blueMatrix, { autoTranspose: true });
-      // let decomps = [redSVD, greenSVD, blueSVD];
-
-      // // Construct proprietary SVD objects
-      // console.log("Mapping svds to SVD obj");
-      // decomps = decomps.map(svd => { // TODO : mapping vs iteration?
-      //   return {
-      //     U: svd.leftSingularVectors, // TODO : round or not round? performance?
-      //     sigma: svd.diagonal,
-      //     Vt: svd.rightSingularVectors.transpose()
-      //   }
-      // });
-      // SVDs.current = decomps; // Store them as refs
-
-      // Initial render the SVDs by the reduction
-      // console.log("Set the red, green, and blue svds in loading use effect");
-      // renderCompression(
-      //   canvasWidth,
-      //   canvasHeight,
-      //   SVDs.current[0],
-      //   SVDs.current[1],
-      //   SVDs.current[2],
-      //   props.reduction
-      // );
-      // ready.current = true;
+      for (let i = 0; i < 3; i++) {
+        workers.current[i].addEventListener("message", e => {
+          console.log("Recieved SVD from worker")
+          console.log(SVDs.current);
+          SVDs.current[i] = {
+            U: new Matrix(e.data.U),
+            sigma: e.data.sigma,
+            Vt: new Matrix(e.data.Vt)
+          };
+          if (SVDs.current[0] && SVDs.current[1] && SVDs.current[2]) {
+            console.log("ALL SVDs DONE!");
+            renderCompression(
+              canvasWidth,
+              canvasHeight,
+              SVDs.current[0],
+              SVDs.current[1],
+              SVDs.current[2],
+              props.reduction
+            );
+            ready.current = true;
+          }
+        });
+        workers.current[i].postMessage({
+          rows: canvasHeight,
+          columns: canvasWidth,
+          array: rgb[i]
+        });
+      }
     }, false);
   }, []);
 
   // Render new low rank approximation when the reduction changes
   useEffect(() => {
     if (ready.current) {
-      
       console.log("Use effect triggered for reduction: " + props.reduction);
       renderCompression(
         props.width,
@@ -217,7 +120,6 @@ function Canvas(props) {
         SVDs.current[2],
         props.reduction
       );
-     
     }
   }, [props.reduction]);
 
@@ -258,7 +160,7 @@ function Canvas(props) {
     rank = parseInt(rank);
     let U = SVD.U.subMatrix(0, SVD.U.rows - 1, 0, rank);
     let Vt = SVD.Vt.subMatrix(0, rank, 0, SVD.Vt.columns - 1);
-    let newSigma = Matrix.diag(SVD.sigma).subMatrix(0, rank, 0, rank);
+    let newSigma = Matrix.diag(SVD.sigma).subMatrix(0, rank, 0, rank).round();
     let result = U.mmul(newSigma).mmul(Vt).round();
     return result;
   }
