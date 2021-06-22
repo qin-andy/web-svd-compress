@@ -52,6 +52,7 @@ body {
 }
 
 .button {
+  visibility: hidden;
   background-color: #29165c; /* Green */
   border: none;
   color: white;
@@ -63,6 +64,7 @@ body {
 }
 
 .button:disabled {
+  visibility: hidden;
   background-color: #5c5c5c; /* Green */
   border: none;
   color: rgb(0, 0, 0);

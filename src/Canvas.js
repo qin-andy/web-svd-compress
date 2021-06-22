@@ -1,35 +1,17 @@
 import React, { useRef, useEffect } from 'react'
 import { Matrix, SingularValueDecomposition } from 'ml-matrix';
-/**
- * Process goes like this:
- * 1. Canvas component is mounted onto page
- * 2. Sets references to canvas HTMLElement
- * 3. Loads image from file
- * 4. After image is loaded, render it onto canvas
- * 5. Extract RGB from canvas image
- * 6. Store RGB in matrix
- * 7. Apply SVD to RGB matricies and store their values
- * 8. Using SVDs, reduce rank, construct a low rank approximation
- * 9. Rebuild image RGB values using low rnak approximation
- * 10. Rerender image onto canvas
- */
 
 function Canvas(props) {
   const SVDs = useRef([0, 0, 0]); // Stores the computed SVDs of an image
   const wh = useRef([props.width, props.height]);
   const ready = useRef(false);
 
-
-  // After the component is mounted, need to get the reference to the canvas context
   const canvasRef = useRef(null)
 
-  // This effect runs ONCE
-  // This effect runs AFTER the component is mounted, so we know we can interact with the canvas
-  // This effect renders the initial image onto the canvas, creates SVD matricies, renders
-  // an initial compression, and then sets the ready flag to allow for further renderings
   useEffect(() => {
     props.setUiDisabled(true);
     SVDs.current = [0, 0, 0];
+
     // Initialize a canvas of initial props width and height, painting the inside black
     console.log("Initial useEffect triggered, initializing canvas ref");
     const canvas = canvasRef.current;
@@ -47,7 +29,7 @@ function Canvas(props) {
       // Updating height and width values according to the loaded img
       // Uses setWidth/setHeight callbacks to update the slider as well
       console.log("Image loaded, beginning initial compress");
-      props.setWidth(img.width); // TODO : combiend object for widht and height?
+      props.setWidth(img.width);
       props.setHeight(img.height);
       wh.current = [img.width, img.height];
       context.canvas.width = img.width;
@@ -70,7 +52,6 @@ function Canvas(props) {
 
       // Construct RGB matricies from arrays
       console.log("Creating matricies");
-      console.log("Sending message to worker");
       for (let i = 0; i < 3; i++) {
         let rows = canvasHeight;
         let columns = canvasWidth;
@@ -94,8 +75,7 @@ function Canvas(props) {
   useEffect(() => {
     if (ready.current) {
       console.log("Use effect triggered for reduction: " + props.reduction);
-      renderCompression(
-      );
+      renderCompression();
     }
   }, [props.reduction]);
 
@@ -103,19 +83,16 @@ function Canvas(props) {
   async function renderCompression() {
     let width = wh.current[0];
     let height = wh.current[1];
-    let redSVD = SVDs.current[0];
-    let greenSVD = SVDs.current[1];
-    let blueSVD = SVDs.current[2];
     let rank = props.reduction;
     // Get low rank approximation matricies
-    let redReduced = reduceRank(redSVD, rank);
-    let greenReduced = reduceRank(greenSVD, rank);
-    let blueReduced = reduceRank(blueSVD, rank);
+    let redSVD = reduceRank(SVDs.current[0], rank);
+    let greenSVD = reduceRank(SVDs.current[1], rank);
+    let blueSVD = reduceRank(SVDs.current[2], rank);
 
     // Convert matricies to arrays
-    let r2 = redReduced.to1DArray();
-    let g2 = greenReduced.to1DArray();
-    let b2 = blueReduced.to1DArray();
+    let r2 = redSVD.to1DArray();
+    let g2 = greenSVD.to1DArray();
+    let b2 = blueSVD.to1DArray();
 
     // Create new image data of the appropriate size
     let imgData = new ImageData(width, height);
