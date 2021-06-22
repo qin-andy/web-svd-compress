@@ -3,7 +3,7 @@ import Canvas from './Canvas';
 import Slider from './Slider';
 
 // TODO : why don't JPGs work?
-import defaultImage from './small_proof.png';
+import defaultImage from './tapir.png';
 
 import { useState } from 'react';
 
@@ -11,11 +11,13 @@ function App(props) {
   const [reduction, setReduction] = useState(30); // Initial reduction compression
   const [width, setWidth] = useState(400); // Initial canvas element height and width
   const [height, setHeight] = useState(300);
+  const [sliderEnabled, setSliderEnabled] = useState(false);
+  let status = sliderEnabled ?  "Image is " + width + " by " + height : "Calculating SVDs...";
   return (
     <div className="App">
       <header className="App-header">
         <h1>SVD Compression</h1>
-        <p>Image is {width} by {height}</p>
+        <p>{status}</p>
         <Canvas
           original="false"
           reduction={reduction}
@@ -24,13 +26,15 @@ function App(props) {
           height={height}
           setWidth={setWidth}
           setHeight={setHeight}
+          setSliderEnabled={setSliderEnabled}
         />
-        <h3>Reduction Value: {reduction}</h3>
+        <h3>Singular Values: {reduction}</h3>
         <Slider
           width={width}
           height={height}
           reduction={reduction}
           changeReduction={setReduction}
+          disabled={!sliderEnabled}
         />
       </header>
     </div>

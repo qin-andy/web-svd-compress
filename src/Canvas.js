@@ -17,9 +17,9 @@ import svdWorker from "./svd.worker";
  */
 
 function Canvas(props) {
-  const SVDs = useRef([]); // Stores the computed SVDs of an image
+  const SVDs = useRef([0, 0, 0]); // Stores the computed SVDs of an image
   const ready = useRef(false);
-  const worker = useRef(null);
+  const workers = useRef(null);
 
   // After the component is mounted, need to get the reference to the canvas context
   const canvasRef = useRef(null)
@@ -30,7 +30,10 @@ function Canvas(props) {
   // an initial compression, and then sets the ready flag to allow for further renderings
   useEffect(() => {
 
-    worker.current = new svdWorker();
+    workers.current = [];
+    workers.current[0] = new svdWorker();
+    workers.current[1] = new svdWorker();
+    workers.current[2] = new svdWorker();
     // Initialize a canvas of initial props width and height, painting the inside black
     console.log("Initial useEffect triggered, initializing canvas ref");
     const canvas = canvasRef.current;
@@ -76,53 +79,135 @@ function Canvas(props) {
       // MATRIX ENTRIES ARE (ROW, COLUMN), i.e. (Y, X)
       // WRONG: (WIDTH, HEIGHT)
       // CORRECT: >>>> (HEIGHT, WIDTH) <<<<
+      console.log(SVDs.current);
       console.log("Sending message to worker");
-      worker.current.addEventListener("message", e => {
-        console.log("Message from worker: " + e.data);
-      });
-      worker.current.postMessage("Hellow, worker!");
+      console.log(workers.current);
 
-      let redMatrix = Matrix.from1DArray(canvasHeight, canvasWidth, r);
-      let greenMatrix = Matrix.from1DArray(canvasHeight, canvasWidth, g);
-      let blueMatrix = Matrix.from1DArray(canvasHeight, canvasWidth, b);
-
-      // Compute SVDs for each matrix
-      // TODO : would it be better to just handle hte matricies directly? would save memory
-      console.log("Computing SVDs");
-      let redSVD = new SingularValueDecomposition(redMatrix, { autoTranspose: true });
-      let greenSVD = new SingularValueDecomposition(greenMatrix, { autoTranspose: true });
-      let blueSVD = new SingularValueDecomposition(blueMatrix, { autoTranspose: true });
-      let decomps = [redSVD, greenSVD, blueSVD];
-
-      // Construct proprietary SVD objects
-      console.log("Mapping svds to SVD obj");
-      decomps = decomps.map(svd => { // TODO : mapping vs iteration?
-        return {
-          U: svd.leftSingularVectors, // TODO : round or not round? performance?
-          sigma: svd.diagonal,
-          Vt: svd.rightSingularVectors.transpose()
+      workers.current[0].addEventListener("message", e => {
+        console.log("Recieved SVD from worker")
+        console.log(SVDs.current);
+        SVDs.current[0] = {
+          U: new Matrix(e.data.U),
+          sigma: e.data.sigma,
+          Vt: new Matrix(e.data.Vt)
+        };
+        if (SVDs.current[0] && SVDs.current[1] && SVDs.current[2]) {
+          console.log("ALL SVDs DONE!");
+          renderCompression(
+            canvasWidth,
+            canvasHeight,
+            SVDs.current[0],
+            SVDs.current[1],
+            SVDs.current[2],
+            props.reduction
+          );
+          ready.current = true;
         }
       });
-      SVDs.current = decomps; // Store them as refs
+
+      workers.current[1].addEventListener("message", e => {
+        console.log("Recieved SVD from worker")
+        console.log(SVDs.current);
+        SVDs.current[1] = {
+          U: new Matrix(e.data.U),
+          sigma: e.data.sigma,
+          Vt: new Matrix(e.data.Vt)
+        };
+        if (SVDs.current[0] && SVDs.current[1] && SVDs.current[2]) {
+          console.log("ALL SVDs DONE!");
+          renderCompression(
+            canvasWidth,
+            canvasHeight,
+            SVDs.current[0],
+            SVDs.current[1],
+            SVDs.current[2],
+            props.reduction
+          );
+          ready.current = true;
+        }
+      });
+
+      workers.current[2].addEventListener("message", e => {
+        console.log("Recieved SVD from worker")
+        console.log(SVDs.current);
+        SVDs.current[2] = {
+          U: new Matrix(e.data.U),
+          sigma: e.data.sigma,
+          Vt: new Matrix(e.data.Vt)
+        };
+        if (SVDs.current[0] && SVDs.current[1] && SVDs.current[2]) {
+          console.log("ALL SVDs DONE!");
+          renderCompression(
+            canvasWidth,
+            canvasHeight,
+            SVDs.current[0],
+            SVDs.current[1],
+            SVDs.current[2],
+            props.reduction
+          );
+          ready.current = true;
+        }
+      });
+
+      workers.current[0].postMessage({
+        rows: canvasHeight,
+        columns: canvasWidth,
+        array: r
+      });
+
+      workers.current[1].postMessage({
+        rows: canvasHeight,
+        columns: canvasWidth,
+        array: g
+      });
+
+      workers.current[2].postMessage({
+        rows: canvasHeight,
+        columns: canvasWidth,
+        array: b
+      });
+
+      // let redMatrix = Matrix.from1DArray(canvasHeight, canvasWidth, r);
+      // let greenMatrix = Matrix.from1DArray(canvasHeight, canvasWidth, g);
+      // let blueMatrix = Matrix.from1DArray(canvasHeight, canvasWidth, b);
+
+      // // Compute SVDs for each matrix
+      // // TODO : would it be better to just handle hte matricies directly? would save memory
+      // console.log("Computing SVDs");
+      // let redSVD = new SingularValueDecomposition(redMatrix, { autoTranspose: true });
+      // let greenSVD = new SingularValueDecomposition(greenMatrix, { autoTranspose: true });
+      // let blueSVD = new SingularValueDecomposition(blueMatrix, { autoTranspose: true });
+      // let decomps = [redSVD, greenSVD, blueSVD];
+
+      // // Construct proprietary SVD objects
+      // console.log("Mapping svds to SVD obj");
+      // decomps = decomps.map(svd => { // TODO : mapping vs iteration?
+      //   return {
+      //     U: svd.leftSingularVectors, // TODO : round or not round? performance?
+      //     sigma: svd.diagonal,
+      //     Vt: svd.rightSingularVectors.transpose()
+      //   }
+      // });
+      // SVDs.current = decomps; // Store them as refs
 
       // Initial render the SVDs by the reduction
-      console.log("Set the red, green, and blue svds in loading use effect");
-      renderCompression(
-        canvasWidth,
-        canvasHeight,
-        SVDs.current[0],
-        SVDs.current[1],
-        SVDs.current[2],
-        props.reduction
-      );
-      ready.current = true;
+      // console.log("Set the red, green, and blue svds in loading use effect");
+      // renderCompression(
+      //   canvasWidth,
+      //   canvasHeight,
+      //   SVDs.current[0],
+      //   SVDs.current[1],
+      //   SVDs.current[2],
+      //   props.reduction
+      // );
+      // ready.current = true;
     }, false);
   }, []);
 
   // Render new low rank approximation when the reduction changes
   useEffect(() => {
     if (ready.current) {
-      worker.current.postMessage("Hebbo from useEffect!");
+      
       console.log("Use effect triggered for reduction: " + props.reduction);
       renderCompression(
         props.width,
@@ -130,22 +215,15 @@ function Canvas(props) {
         SVDs.current[0],
         SVDs.current[1],
         SVDs.current[2],
-        props.reduction);
+        props.reduction
+      );
+     
     }
   }, [props.reduction]);
 
-  // Reduces the SVD by the given rank
-  function reduceRank(SVD, rank) {
-    rank = parseInt(rank);
-    let U = SVD.U.subMatrix(0, SVD.U.rows - 1, 0, rank);
-    let Vt = SVD.Vt.subMatrix(0, rank, 0, SVD.Vt.columns - 1);
-    let newSigma = Matrix.diag(SVD.sigma).subMatrix(0, rank, 0, rank);
-    let result = U.mmul(newSigma).mmul(Vt).round();
-    return result;
-  }
-
   // Rebuilds the image on the given imgData given image SVDs
   function renderCompression(width, height, redSVD, greenSVD, blueSVD, rank) {
+    props.setSliderEnabled(false);
     // Get low rank approximation matricies
     let redReduced = reduceRank(redSVD, rank);
     let greenReduced = reduceRank(greenSVD, rank);
@@ -172,6 +250,17 @@ function Canvas(props) {
     //Render image data to canvas
     canvasRef.current.getContext('2d').putImageData(imgData, 0, 0);
     console.log("Reduced image rendered to canvas");
+    props.setSliderEnabled(true);
+  }
+
+  // Reduces the SVD by the given rank
+  function reduceRank(SVD, rank) {
+    rank = parseInt(rank);
+    let U = SVD.U.subMatrix(0, SVD.U.rows - 1, 0, rank);
+    let Vt = SVD.Vt.subMatrix(0, rank, 0, SVD.Vt.columns - 1);
+    let newSigma = Matrix.diag(SVD.sigma).subMatrix(0, rank, 0, rank);
+    let result = U.mmul(newSigma).mmul(Vt).round();
+    return result;
   }
 
   return (

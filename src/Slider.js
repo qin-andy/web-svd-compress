@@ -24,6 +24,7 @@ function Slider(props) {
       className="slider"
       onMouseUp={handleMouseUp}
       onChange={handleChange}
+      disabled={props.disabled}
     />
   )
 }
