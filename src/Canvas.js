@@ -1,7 +1,5 @@
 import React, { useRef, useEffect } from 'react'
 import { Matrix, SingularValueDecomposition } from 'ml-matrix';
-import svdWorker from "./svd.worker";
-
 /**
  * Process goes like this:
  * 1. Canvas component is mounted onto page
@@ -20,35 +18,10 @@ function Canvas(props) {
   const SVDs = useRef([0, 0, 0]); // Stores the computed SVDs of an image
   const wh = useRef([props.width, props.height]);
   const ready = useRef(false);
-  const workers = useRef([
-    new svdWorker(),
-    new svdWorker(),
-    new svdWorker()
-  ]);
+
 
   // After the component is mounted, need to get the reference to the canvas context
   const canvasRef = useRef(null)
-
-  useEffect(() => {
-    for (let i = 0; i < 3; i++) {
-      console.log("ADDING EVENT LISTENER TO WORKER");
-      workers.current[i].addEventListener("message", e => {
-        console.log("Recieved SVD from worker")
-        console.log(SVDs.current);
-        SVDs.current[i] = {
-          U: new Matrix(e.data.U),
-          sigma: e.data.sigma,
-          Vt: new Matrix(e.data.Vt)
-        };
-        if (SVDs.current[0] && SVDs.current[1] && SVDs.current[2]) {
-          console.log("ALL SVDs DONE!");
-          renderCompression();
-          props.setUiDisabled(false);
-          ready.current = true;
-        }
-      });
-    }
-  }, []);
 
   // This effect runs ONCE
   // This effect runs AFTER the component is mounted, so we know we can interact with the canvas
@@ -99,12 +72,21 @@ function Canvas(props) {
       console.log("Creating matricies");
       console.log("Sending message to worker");
       for (let i = 0; i < 3; i++) {
-        workers.current[i].postMessage({
-          rows: canvasHeight,
-          columns: canvasWidth,
-          array: rgb[i]
-        });
+        let rows = canvasHeight;
+        let columns = canvasWidth;
+        let array = rgb[i];
+        let matrix = Matrix.from1DArray(rows, columns, array);
+        let svd = new SingularValueDecomposition(matrix, { autoTranspose: true });
+        SVDs.current[i] = {
+          U: svd.leftSingularVectors,
+          sigma: svd.diagonal.map(Math.round),
+          Vt: svd.rightSingularVectors.transpose()
+        }
       }
+      renderCompression();
+      props.setUiDisabled(false);
+      ready.current = true;
+
     }, false);
   }, [props.image]);
 
