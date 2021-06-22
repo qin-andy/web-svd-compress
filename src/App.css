@@ -14,16 +14,23 @@
 }
 
 body {
-  background-color: #282c34;
+  background-color: #091631;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   font-size: calc(10px + 2vmin);
   color: white;
   margin-left: 20vw;
   margin-right: 20vw;
+}
+
+.info-container {
+    border-radius: 3vw;
+    background: #45407e;
+    padding: 20px;
+    width: 75vw;
+    height: auto;
 }
 
 .App-link {
@@ -41,8 +48,5 @@ body {
 
 .slider {
   width: 50vw;
-}
-
-Canvas {
-  display: inline;
+  margin: 3vw;
 }

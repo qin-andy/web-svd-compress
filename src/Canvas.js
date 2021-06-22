@@ -29,7 +29,6 @@ function Canvas(props) {
   // This effect renders the initial image onto the canvas, creates SVD matricies, renders
   // an initial compression, and then sets the ready flag to allow for further renderings
   useEffect(() => {
-
     workers.current = [];
     workers.current[0] = new svdWorker();
     workers.current[1] = new svdWorker();
@@ -106,12 +105,13 @@ function Canvas(props) {
         });
       }
     }, false);
-  }, []);
+  }, [props.image]);
 
   // Render new low rank approximation when the reduction changes
   useEffect(() => {
     if (ready.current) {
       console.log("Use effect triggered for reduction: " + props.reduction);
+      props.setSliderEnabled(false);
       renderCompression(
         props.width,
         props.height,
@@ -124,8 +124,7 @@ function Canvas(props) {
   }, [props.reduction]);
 
   // Rebuilds the image on the given imgData given image SVDs
-  function renderCompression(width, height, redSVD, greenSVD, blueSVD, rank) {
-    props.setSliderEnabled(false);
+  async function renderCompression(width, height, redSVD, greenSVD, blueSVD, rank) {
     // Get low rank approximation matricies
     let redReduced = reduceRank(redSVD, rank);
     let greenReduced = reduceRank(greenSVD, rank);

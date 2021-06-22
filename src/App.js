@@ -3,14 +3,22 @@ import Canvas from './Canvas';
 import Slider from './Slider';
 
 // TODO : why don't JPGs work?
-import defaultImage from './tapir.png';
-
-import { useState } from 'react';
+import horizon from './images/horizon.png';
+import bridge from './images/bridge.png';
+import city from './images/city.png';
+import origami from './images/origami.png';
+import shore from './images/shore.png';
+import squid from './images/squid.png';
+import pole from './images/pole.png';
+import tapir from './images/tapir.png';
+import { useState, useRef } from 'react';
 
 function App(props) {
-  const [reduction, setReduction] = useState(30); // Initial reduction compression
+  const [reduction, setReduction] = useState(19); // Initial reduction compression
   const [width, setWidth] = useState(400); // Initial canvas element height and width
   const [height, setHeight] = useState(300);
+  const [image, setImage] = useState(horizon);
+  const images = useRef([horizon, bridge, city, origami, shore, squid, pole, tapir]);
   const [sliderEnabled, setSliderEnabled] = useState(false);
   let status = sliderEnabled ? "Image is " + width + " by " + height : "Calculating SVDs...";
   return (
@@ -22,14 +30,13 @@ function App(props) {
       <Canvas
         original="false"
         reduction={reduction}
-        image={defaultImage}
+        image={image}
         width={width}
         height={height}
         setWidth={setWidth}
         setHeight={setHeight}
         setSliderEnabled={setSliderEnabled}
       />
-      <h3>Singular Values: {reduction}</h3>
       <Slider
         width={width}
         height={height}
@@ -37,13 +44,12 @@ function App(props) {
         changeReduction={setReduction}
         disabled={!sliderEnabled}
       />
-      <h2>
-        INFO
-      </h2>
-      <p>
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-      </p>
-
+      <div className="info-container">
+        <h3>Singular Values: {parseInt(reduction) + 1}</h3>
+        <p>
+          An interactive demo of Singular Value Decomposition (SVD) compression applied to various images.
+        </p>
+      </div>
     </div>
   );
 }
