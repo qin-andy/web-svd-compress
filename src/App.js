@@ -1,7 +1,6 @@
 import './App.css';
 import Canvas from './Canvas';
 import Slider from './Slider';
-import GalleryButton from './GalleryButton';
 
 // TODO : why don't JPGs work?
 import horizon from './images/horizon.png';
